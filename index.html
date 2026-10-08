@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pocong Hunter 3D</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      color: #fff;
+    }
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* UI Overlays */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(5, 5, 10, 0.85);
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+    .hidden {
+      display: none !important;
+    }
+
+    /* Typography & Buttons */
+    h1 {
+      font-size: 3rem;
+      color: #e74c3c;
+      text-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    h2 {
+      font-size: 2rem;
+      color: #f39c12;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 1.1rem;
+      color: #ccc;
+      margin-bottom: 20px;
+      text-align: center;
+      max-width: 80%;
+    }
+    .btn {
+      background: linear-gradient(135deg, #c0392b, #8e44ad);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 25px;
+      cursor: pointer;
+      margin: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    /* HUD Elements */
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .hud-panel {
+      position: absolute;
+      padding: 10px 15px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    #stats-hud {
+      top: 15px;
+      left: 15px;
+      display: flex;
+      gap: 20px;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    #pause-btn {
+      top: 15px;
+      right: 15px;
+      pointer-events: auto;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Target Crosshair */
+    #crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    /* Health Bars World Overlay */
+    #health-bars-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .enemy-hp-bar {
+      position: absolute;
+      width: 60px;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #fff;
+      border-radius: 3px;
+      overflow: hidden;
+      transform: translate(-50%, -100%);
+    }
+    .enemy-hp-fill {
+      height: 100%;
+      background: #e74c3c;
+      width: 100%;
+      transition: width 0.1s ease;
+    }
+
+    /* Mobile Controls */
+    #touch-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .joystick-zone {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      pointer-events: auto;
+      touch-action: none;
+    }
+    .joystick-knob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      background: rgba(231, 76, 60, 0.6);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #fire-btn {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      width: 80px;
+      height: 80px;
+      background: rgba(231, 76, 60, 0.7);
+      border: 3px solid #fff;
+      border-radius: 50%;
+      pointer-events: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 1rem;
+      box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+    }
+
+    /* Landscape Warning */
+    #landscape-warning {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      z-index: 999;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    @media screen and (orientation: portrait) {
+      #landscape-warning {
+        display: flex;
+      }
+    }
+  </style>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="landscape-warning">
+    <h1>MOHON PUTAR HP ANDA</h1>
+    <p>Game ini dirancang untuk dimainkan dalam posisi Landscape (Mendatar).</p>
+  </div>
+
+  <div id="game-container">
+    <!-- UI Main Menu -->
+    <div id="main-menu" class="overlay">
+      <h1>POCONG HUNTER 3D</h1>
+      <p>Basmi Pocong di dalam kuburan horor! Gunakan Senjata Senter/Sihir untuk membasmi mereka.</p>
+      <button class="btn" id="start-btn">Mulai Berburu</button>
+      <button class="btn" id="fullscreen-btn">Layar Penuh (Fullscreen)</button>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-menu" class="overlay hidden">
+      <h2>PERMAINAN DIPAUS</h2>
+      <button class="btn" id="resume-btn">Lanjutkan</button>
+      <button class="btn" id="restart-btn">Ulangi Level</button>
+      <button class="btn" id="menu-btn">Menu Utama</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-menu" class="overlay hidden">
+      <h1 style="color: #900;">KAMU TEWAS!</h1>
+      <p id="gameover-text">Pocong telah mengambil jiwamu...</p>
+      <button class="btn" id="retry-btn">Coba Lagi</button>
+    </div>
+
+    <!-- Level Complete Screen -->
+    <div id="level-menu" class="overlay hidden">
+      <h2 style="color: #2ecc71;">LEVEL SELESAI!</h2>
+      <p id="level-text">Area telah dibersihkan dari ancaman hantu.</p>
+      <button class="btn" id="next-btn">Lanjut Level berikutnya</button>
+    </div>
+
+    <!-- In-Game HUD -->
+    <div id="hud" class="hidden">
+      <div id="stats-hud" class="hud-panel">
+        <div>HP: <span id="player-hp" style="color: #2ecc71;">100</span></div>
+        <div>LEVEL: <span id="current-level" style="color: #f39c12;">1</span></div>
+        <div>SISA POCONG: <span id="enemy-count" style="color: #e74c3c;">0</span></div>
+      </div>
+      <button id="pause-btn">PAUSE</button>
+      <div id="crosshair"></div>
+      <div id="health-bars-container"></div>
+      
+      <!-- Touch Controls for Mobile -->
+      <div id="touch-controls">
+        <div class="joystick-zone" id="joystick">
+          <div class="joystick-knob" id="knob"></div>
+        </div>
+        <div id="fire-btn">TEMBAK</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       SOUND SYNTHESIZER (Web Audio API)
+       ========================================== */
+    class SoundSystem {
+      constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      playShoot() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.15);
+        
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+      }
+
+      playHit() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.2);
+
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
+      }
+
+      playPocongScream() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(600, this.ctx.currentTime + 0.1);
+        osc.frequency.linearRampToValueAtTime(200, this.ctx.currentTime + 0.4);
+
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.4);
+      }
+    }
+
+    const sound = new SoundSystem();
+
+    /* ==========================================
+       GAME ENGINE & LOGIC
+       ========================================== */
+    class Game {
+      constructor() {
+        this.container = document.getElementById('game-container');
+        this.hpContainer = document.getElementById('health-bars-container');
+        
+        // Game State
+        this.level = 1;
+        this.playerHp = 100;
+        this.isPaused = false;
+        this.isPlaying = false;
+        this.enemies = [];
+        this.bullets = [];
+
+        // Controls Input
+        this.moveInput = { forward: 0, right: 0 };
+        this.touchLook = { active: false, x: 0, y: 0 };
+
+        this.initThree();
+        this.initEvents();
+        this.animate();
+      }
+
+      initThree() {
+        // Scene setup
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x05050a);
+        this.scene.fog = new THREE.FogExp2(0x05050a, 0.05);
+
+        // Camera Setup (First Person)
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        this.camera.position.set(0, 1.6, 0);
+
+        // Renderer Setup
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.container.appendChild(this.renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x111122, 0.5);
+        this.scene.add(ambientLight);
+
+        // Flashlight Attached to Camera
+        this.flashlight = new THREE.SpotLight(0xffffff, 2, 25, Math.PI / 6, 0.5);
+        this.flashlight.position.set(0, 0, 0);
+        this.camera.add(this.flashlight);
+        this.flashlight.target = new THREE.Object3D();
+        this.camera.add(this.flashlight.target);
+        this.flashlight.target.position.set(0, 0, -1);
+        this.scene.add(this.camera);
+
+        // Build Environment Ground
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x112211, roughness: 0.9 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        this.scene.add(floor);
+
+        // Add Environment Props (Grave Stones & Trees)
+        this.buildGraveyard();
+      }
+
+      buildGraveyard() {
+        // Simple procedural tombstones
+        const stoneGeo = new THREE.BoxGeometry(0.8, 1.2, 0.3);
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+
+        for (let i = 0; i < 40; i++) {
+          const stone = new THREE.Mesh(stoneGeo, stoneMat);
+          const x = (Math.random() - 0.5) * 80;
+          const z = (Math.random() - 0.5) * 80;
+          if (Math.hypot(x, z) > 5) { // Keep safe spawn zone
+            stone.position.set(x, 0.6, z);
+            stone.rotation.y = Math.random() * Math.PI;
+            this.scene.add(stone);
+          }
+        }
+      }
+
+      createPocongTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#cccccc';
+        ctx.fillRect(0,0,128,128);
+        ctx.fillStyle = '#000000';
+        // Eye holes
+        ctx.fillRect(30, 40, 20, 20);
+        ctx.fillRect(78, 40, 20, 20);
+        // Blood mark
+        ctx.fillStyle = '#880000';
+        ctx.fillRect(50, 70, 28, 40);
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      spawnPocong() {
+        const group = new THREE.Group();
+
+        // Pocong Mesh (Procedural)
+        const clothMat = new THREE.MeshStandardMaterial({ 
+          color: 0xdddddd, 
+          roughness: 0.8 
+        });
+
+        // Body
+        const bodyGeo = new THREE.CylinderGeometry(0.35, 0.25, 1.8, 12);
+        const body = new THREE.Mesh(bodyGeo, clothMat);
+        body.position.y = 0.9;
+        group.add(body);
+
+        // Head
+        const headGeo = new THREE.SphereGeometry(0.3, 12, 12);
+        const faceMat = new THREE.MeshBasicMaterial({ map: this.createPocongTexture() });
+        const head = new THREE.Mesh(headGeo, faceMat);
+        head.position.y = 1.9;
+        head.rotation.y = Math.PI / 2;
+        group.add(head);
+
+        // Top Knot (Tali Pocong Atas)
+        const knotGeo = new THREE.ConeGeometry(0.15, 0.3, 8);
+        const knot = new THREE.Mesh(knotGeo, clothMat);
+        knot.position.y = 2.3;
+        group.add(knot);
+
+        // Position enemy randomly away from player
+        let angle = Math.random() * Math.PI * 2;
+        let dist = 15 + Math.random() * 20;
+        group.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+
+        this.scene.add(group);
+
+        // Create DOM Health Bar
+        const hpBar = document.createElement('div');
+        hpBar.className = 'enemy-hp-bar';
+        const hpFill = document.createElement('div');
+        hpFill.className = 'enemy-hp-fill';
+        hpBar.appendChild(hpFill);
+        this.hpContainer.appendChild(hpBar);
+
+        const enemyData = {
+          mesh: group,
+          hp: 100 + (this.level * 20),
+          maxHp: 100 + (this.level * 20),
+          speed: 1.5 + (this.level * 0.3),
+          hpBar: hpBar,
+          hpFill: hpFill,
+          hopOffset: Math.random() * Math.PI,
+          lastAttack: 0
+        };
+
+        this.enemies.push(enemyData);
+      }
+
+      startLevel() {
+        // Clear Existing Enemies
+        this.enemies.forEach(e => {
+          this.scene.remove(e.mesh);
+          e.hpBar.remove();
+        });
+        this.enemies = [];
+
+        // Spawn Count Based on Level
+        const count = 3 + (this.level * 2);
+        for (let i = 0; i < count; i++) {
+          this.spawnPocong();
+        }
+
+        this.updateHUD();
+      }
+
+      shoot() {
+        if (!this.isPlaying || this.isPaused) return;
+
+        sound.playShoot();
+
+        // Raycasting for Hit Detection
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+
+        const targetMeshes = [];
+        this.enemies.forEach(e => {
+          e.mesh.traverse(child => {
+            if (child.isMesh) {
+              child.userData.enemyRef = e;
+              targetMeshes.push(child);
+            }
+          });
+        });
+
+        const intersects = raycaster.intersectObjects(targetMeshes);
+
+        if (intersects.length > 0) {
+          const hitEnemy = intersects[0].object.userData.enemyRef;
+          if (hitEnemy) {
+            hitEnemy.hp -= 35;
+            sound.playHit();
+
+            if (hitEnemy.hp <= 0) {
+              sound.playPocongScream();
+              this.scene.remove(hitEnemy.mesh);
+              hitEnemy.hpBar.remove();
+              this.enemies = this.enemies.filter(e => e !== hitEnemy);
+              this.checkWinCondition();
+            }
+          }
+        }
+        this.updateHUD();
+      }
+
+      checkWinCondition() {
+        if (this.enemies.length === 0) {
+          this.isPlaying = false;
+          document.getElementById('level-menu').classList.remove('hidden');
+          document.getElementById('hud').classList.add('hidden');
+        }
+      }
+
+      playerTakeDamage(amount) {
+        this.playerHp -= amount;
+        this.updateHUD();
+        if (this.playerHp <= 0) {
+          this.playerHp = 0;
+          this.isPlaying = false;
+          document.getElementById('gameover-menu').classList.remove('hidden');
+          document.getElementById('hud').classList.add('hidden');
+        }
+      }
+
+      updateHUD() {
+        document.getElementById('player-hp').innerText = this.playerHp;
+        document.getElementById('current-level').innerText = this.level;
+        document.getElementById('enemy-count').innerText = this.enemies.length;
+      }
+
+      /* ==========================================
+         CONTROLS & INPUT SYSTEM
+         ========================================== */
+      initEvents() {
+        window.addEventListener('resize', () => this.onWindowResize());
+
+        // Desktop Controls (Mouse Look & WASD)
+        this.keys = {};
+        window.addEventListener('keydown', e => {
+          this.keys[e.code] = true;
+          if (e.code === 'KeyP') this.togglePause();
+        });
+        window.addEventListener('keyup', e => this.keys[e.code] = false);
+
+        // Mouse Shoot
+        window.addEventListener('mousedown', (e) => {
+          if (this.isPlaying && !this.isPaused && e.button === 0) {
+            // Check if clicking on joystick/fire btn or canvas
+            if (e.target.tagName === 'CANVAS') {
+              this.shoot();
+            }
+          }
+        });
+
+        // Touch Drag Looking (Right half of screen)
+        window.addEventListener('touchstart', e => {
+          for (let t of e.changedTouches) {
+            if (t.clientX > window.innerWidth / 2 && !this.touchLook.active) {
+              this.touchLook.active = true;
+              this.touchLook.id = t.identifier;
+              this.touchLook.x = t.clientX;
+              this.touchLook.y = t.clientY;
+            }
+          }
+        });
+
+        window.addEventListener('touchmove', e => {
+          for (let t of e.changedTouches) {
+            if (this.touchLook.active && t.identifier === this.touchLook.id) {
+              const dx = t.clientX - this.touchLook.x;
+              const dy = t.clientY - this.touchLook.y;
+
+              this.camera.rotation.y -= dx * 0.005;
+              // Pitch Limit
+              this.camera.rotation.x = Math.max(-Math.PI/3, Math.min(Math.PI/3, this.camera.rotation.x - dy * 0.005));
+
+              this.touchLook.x = t.clientX;
+              this.touchLook.y = t.clientY;
+            }
+          }
+        });
+
+        const resetTouch = e => {
+          for (let t of e.changedTouches) {
+            if (this.touchLook.active && t.identifier === this.touchLook.id) {
+              this.touchLook.active = false;
+            }
+          }
+        };
+        window.addEventListener('touchend', resetTouch);
+        window.addEventListener('touchcancel', resetTouch);
+
+        // Virtual Joystick Setup
+        this.setupJoystick();
+
+        // UI Button Handlers
+        document.getElementById('start-btn').onclick = () => this.startGame();
+        document.getElementById('fullscreen-btn').onclick = () => this.toggleFullscreen();
+        document.getElementById('pause-btn').onclick = () => this.togglePause();
+        document.getElementById('resume-btn').onclick = () => this.togglePause();
+        document.getElementById('restart-btn').onclick = () => {
+          this.togglePause();
+          this.startLevel();
+        };
+        document.getElementById('menu-btn').onclick = () => {
+          location.reload();
+        };
+        document.getElementById('retry-btn').onclick = () => {
+          this.playerHp = 100;
+          document.getElementById('gameover-menu').classList.add('hidden');
+          document.getElementById('hud').classList.remove('hidden');
+          this.isPlaying = true;
+          this.startLevel();
+        };
+        document.getElementById('next-btn').onclick = () => {
+          this.level++;
+          document.getElementById('level-menu').classList.add('hidden');
+          document.getElementById('hud').classList.remove('hidden');
+          this.isPlaying = true;
+          this.startLevel();
+        };
+        document.getElementById('fire-btn').onclick = () => this.shoot();
+      }
+
+      setupJoystick() {
+        const zone = document.getElementById('joystick');
+        const knob = document.getElementById('knob');
+        let touchId = null;
+
+        zone.addEventListener('touchstart', e => {
+          e.preventDefault();
+          const t = e.changedTouches[0];
+          touchId = t.identifier;
+        });
+
+        zone.addEventListener('touchmove', e => {
+          e.preventDefault();
+          for (let t of e.changedTouches) {
+            if (t.identifier === touchId) {
+              const rect = zone.getBoundingClientRect();
+              const centerX = rect.left + rect.width / 2;
+              const centerY = rect.top + rect.height / 2;
+
+              let dx = t.clientX - centerX;
+              let dy = t.clientY - centerY;
+              const dist = Math.hypot(dx, dy);
+              const maxDist = rect.width / 2;
+
+              if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+              }
+
+              knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+              // Normalize movement values (-1 to 1)
+              this.moveInput.right = dx / maxDist;
+              this.moveInput.forward = -dy / maxDist;
+            }
+          }
+        });
+
+        const endJoystick = e => {
+          for (let t of e.changedTouches) {
+            if (t.identifier === touchId) {
+              touchId = null;
+              knob.style.transform = 'translate(-50%, -50%)';
+              this.moveInput.forward = 0;
+              this.moveInput.right = 0;
+            }
+          }
+        };
+
+        zone.addEventListener('touchend', endJoystick);
+        zone.addEventListener('touchcancel', endJoystick);
+      }
+
+      toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      startGame() {
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        this.isPlaying = true;
+        this.level = 1;
+        this.playerHp = 100;
+        this.startLevel();
+      }
+
+      togglePause() {
+        if (!this.isPlaying) return;
+        this.isPaused = !this.isPaused;
+        const pauseMenu = document.getElementById('pause-menu');
+        if (this.isPaused) {
+          pauseMenu.classList.remove('hidden');
+        } else {
+          pauseMenu.classList.add('hidden');
+        }
+      }
+
+      onWindowResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      /* ==========================================
+         GAME LOOP (Animation & Physics Update)
+         ========================================== */
+      animate() {
+        requestAnimationFrame(() => this.animate());
+
+        if (this.isPlaying && !this.isPaused) {
+          const delta = 0.016; // Simulated frame time (~60fps)
+          const time = clock.getElapsedTime();
+
+          // Player Movement Logic (Keyboard + Joystick)
+          let moveFwd = this.moveInput.forward;
+          let moveSide = this.moveInput.right;
+
+          if (this.keys['KeyW']) moveFwd = 1;
+          if (this.keys['KeyS']) moveFwd = -1;
+          if (this.keys['KeyA']) moveSide = -1;
+          if (this.keys['KeyD']) moveSide = 1;
+
+          const speed = 4.0 * delta;
+          const dir = new THREE.Vector3();
+          
+          // Forward and side vectors based on camera rotation
+          const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.camera.rotation.y);
+          const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.camera.rotation.y);
+
+          dir.addScaledVector(forward, moveFwd);
+          dir.addScaledVector(side, moveSide);
+          dir.normalize();
+
+          this.camera.position.x += dir.x * speed;
+          this.camera.position.z += dir.z * speed;
+
+          // Enemy AI & Animation Update
+          this.enemies.forEach(e => {
+            // Movement towards player
+            const enemyPos = e.mesh.position;
+            const playerPos = this.camera.position;
+
+            const dx = playerPos.x - enemyPos.x;
+            const dz = playerPos.z - enemyPos.z;
+            const dist = Math.hypot(dx, dz);
+
+            // Look at player
+            e.mesh.lookAt(playerPos.x, enemyPos.y, playerPos.z);
+
+            if (dist > 1.2) {
+              // Hopping movement (Pocong hopping effect)
+              enemyPos.x += (dx / dist) * e.speed * delta;
+              enemyPos.z += (dz / dist) * e.speed * delta;
+              enemyPos.y = Math.abs(Math.sin(time * 5 + e.hopOffset)) * 0.4;
+            } else {
+              // Damage player if close
+              if (Date.now() - e.lastAttack > 1000) {
+                this.playerTakeDamage(15);
+                e.lastAttack = Date.now();
+              }
+            }
+
+            // Update UI Health Bar position above enemy
+            const tempVec = new THREE.Vector3();
+            e.mesh.getWorldPosition(tempVec);
+            tempVec.y += 2.4; // Screen offset above head
+            tempVec.project(this.camera);
+
+            // Convert normalized coordinates to screen pixel position
+            const x = (tempVec.x * .5 + .5) * window.innerWidth;
+            const y = (-(tempVec.y * .5) + .5) * window.innerHeight;
+
+            if (tempVec.z < 1) { // Render only if in front of camera
+              e.hpBar.style.display = 'block';
+              e.hpBar.style.left = `${x}px`;
+              e.hpBar.style.top = `${y}px`;
+              e.hpFill.style.width = `${(e.hp / e.maxHp) * 100}%`;
+            } else {
+              e.hpBar.style.display = 'none';
+            }
+          });
+        }
+
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    const clock = new THREE.Clock();
+    // Initialize Game Instance
+    window.onload = () => {
+      new Game();
+    };
+  </script>
+</body>
+</html>
